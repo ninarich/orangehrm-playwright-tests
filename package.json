@@ -1,0 +1,19 @@
+{
+  "name": "orangehrm-playwright-tests",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "UI test automation for OrangeHRM with Playwright, JavaScript and Page Object Model",
+  "devDependencies": {
+    "@faker-js/faker": "^9.9.0",
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.0",
+    "dotenv": "^16.4.5"
+  },
+  "dependencies": {
+    "chance": "^1.1.13"
+  }
+}
