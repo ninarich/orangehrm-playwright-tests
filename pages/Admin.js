@@ -1,15 +1,10 @@
 // Page Object for Admin > User Management > System Users.
 // It keeps the locators and methods for the users table, the search form
 // and the "Add User" form.
-// Helper imports: faker creates random test data, functions.js has shared helper functions.
+// faker creates random test data (a random password in the "Add Password" test).
 
-import { foo, returnTwoNumbers } from "../utils/functions.js";
 import { faker } from "@faker-js/faker";
-import { fakerUser } from "../utils/functions.js";
-import { chanceUsername } from "../utils/functions.js";
  
-const Chance = require("chance");
-var chance = new Chance();
  
 exports.Admin = class Admin {
   constructor(page) {
@@ -32,17 +27,16 @@ exports.Admin = class Admin {
     this.userConfirmPassword = `(//input[@type='password'])[2]`;
     this.saveButton = `(//button[normalize-space()='Save'])[1]`;
     this.passwordMismatchError = `//span[normalize-space()='Passwords do not match']`;
-    this.userSearchResult = `(//div[@role='cell'])[2]`;
   }
   // Opens the System Users page.
   // Used in: all tests in tests/admin.spec.js
   // Run: npx playwright test tests/admin.spec.js --headed
   async gotoAdmin() {
-    await this.page.waitForTimeout(4000);
     await this.page.goto(
       "https://opensource-demo.orangehrmlive.com/web/index.php/admin/viewSystemUsers",
     );
-    await this.page.waitForTimeout(4000);
+    // Wait until the users table is loaded (the first Status value is on the page)
+    await this.page.locator(this.columnStatus).first().waitFor();
   }
   // Returns the number of links in the Admin top menu.
   // Used in: tests/admin.spec.js -> "Admin Count Links"
@@ -104,7 +98,6 @@ exports.Admin = class Admin {
     return countTwo;
   }
  
-  ////////
   // Takes the last username in the table, searches for it
   // and returns true if the first search result is the same user.
   // Used in: tests/admin.spec.js -> "Username comparison"
@@ -117,7 +110,10 @@ exports.Admin = class Admin {
     await usernameSearchField.fill(lastUserInList);
     let searchButton = await this.page.locator(this.searchButton);
     await searchButton.click();
-    await this.page.waitForTimeout(3000);
+    // Wait until the first row of the table shows the searched username (max 10 seconds)
+    await this.page
+      .locator(`(//div[@class='oxd-table-card'])[1]//div[@role='cell'][2][normalize-space()='${lastUserInList.trim()}']`)
+      .waitFor({ timeout: 10000 });
     // Compare with the first search result in the table (same as in addUserAll)
     let searchResult = this.page.locator(
       `//div[@class='oxd-table-card']//div[@role='cell'][2]`,
@@ -145,8 +141,9 @@ exports.Admin = class Admin {
       if (visible) {
         await checkbox.click();
       }
-      await this.page.waitForTimeout(500);
     }
+    // Wait until the "Delete Selected" button appears (max 10 seconds)
+    await this.page.locator(this.deleteSelectedButton).waitFor({ timeout: 10000 });
     let buttonVisible = await this.page
       .locator(this.deleteSelectedButton)
       .isVisible();
@@ -178,9 +175,9 @@ exports.Admin = class Admin {
  
     let saveButton = await this.page.locator(this.saveButton);
     await saveButton.click();
-    await this.page.waitForTimeout(2000);
  
-    // The "Passwords do not match" error should appear
+    // The "Passwords do not match" error should appear (wait max 10 seconds)
+    await this.page.locator(this.passwordMismatchError).waitFor({ timeout: 10000 });
     let errorVisible = await this.page.locator(this.passwordMismatchError).isVisible();
     if (!errorVisible) {
       return false;
@@ -211,17 +208,16 @@ exports.Admin = class Admin {
     await this.page.keyboard.press("Enter");
  
     let userUsername = await this.page.locator(this.userUsername);
-    //const fakerUsername = faker.internet.username();
     let randomNum = Math.floor(Math.random() * 9000) + 1000;
     let userUsernameText = "Tortik" + randomNum;
     await userUsername.fill(userUsernameText);
-    // await userUsername.fill(fakerUsername);
-    // await userUsername.fill(fakerUser()); // https://fakerjs.dev/guide/
  
     // employeeName
     let employeeName = await this.page.locator(this.userEmployeeName);
     await employeeName.click();
     await employeeName.fill("a");
+    // Suggestions are loaded from the server. This pause is kept on purpose:
+    // the list first shows "Searching...", and we need the real names before we press ArrowDown.
     await this.page.waitForTimeout(4000);
     await this.page.focus(this.userEmployeeName);
     await this.page.keyboard.press("ArrowDown");
@@ -231,9 +227,6 @@ exports.Admin = class Admin {
     let userPasswordField = await this.page.locator(this.userPassword);
     await userPasswordField.click();
     let randomPassword = "A1s2d3f@g";
-    //const chancePassword = faker.internet.password();
-    //let randomPassword = await faker.internet.password({ length: 20 });
-    //await userPassword.fill(randomPassword);
     await userPasswordField.fill(randomPassword);
  
     //userConfirmPassword
@@ -245,16 +238,22 @@ exports.Admin = class Admin {
     let saveButton = await this.page.locator(this.saveButton);
     await saveButton.click();
  
+    // After Save, the app goes back to the users list: wait for the page and the table
+    await this.page.waitForURL(/viewSystemUsers/);
+    await this.page.locator(this.columnStatus).first().waitFor();
+
     // Check that the new user can be found by search
     let usernameSearchCompare = this.page.locator(this.usernameSearch);
-    await this.page.waitForTimeout(4000);
     await usernameSearchCompare.fill(userUsernameText); //
     console.log(`Searching for: "${userUsernameText}"`);
  
     // 2. Click the Search button
     let searchButton = this.page.locator(this.searchButton);
     await searchButton.click();
-    await this.page.waitForTimeout(3000);
+    // Wait until the first row of the table shows the new username (max 10 seconds)
+    await this.page
+      .locator(`(//div[@class='oxd-table-card'])[1]//div[@role='cell'][2][normalize-space()='${userUsernameText}']`)
+      .waitFor({ timeout: 10000 });
  
     // 3. Get the result from the table
     let userSearchResult = this.page.locator(

@@ -15,7 +15,7 @@ test.beforeEach(async ({ page }) => {
   const login = new LoginPage(page);
   await login.gotoLoginPage();
   await login.login(process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
-  await page.waitForTimeout(4000);
+  await page.waitForURL(/dashboard/); // wait until the Dashboard is open after login
 });
 
 // Click View without Employee Name: the "Required" message should appear

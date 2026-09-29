@@ -4,7 +4,6 @@
 exports.TimePage = class TimePage {
   constructor(page) {
     this.page = page;
-    this.icons = `//div[@class='orangehrm-dashboard-widget-body']`;
     this.viewButton = `(//button[@type='submit'])[1]`;
     this.required = `(//span[@class='oxd-text oxd-text--span oxd-input-field-error-message oxd-input-group__message'])[1]`;
     this.viewActionButton = `(//button[@type='button'][normalize-space()='View'])[1]`;
@@ -15,11 +14,11 @@ exports.TimePage = class TimePage {
   // Used in: all tests in tests/time.spec.js
   // Run: npx playwright test tests/time.spec.js --headed
   async gotoTimePage() {
-    await this.page.waitForTimeout(4000);
     await this.page.goto(
       "https://opensource-demo.orangehrmlive.com/web/index.php/time/viewEmployeeTimesheet",
     );
-    await this.page.waitForTimeout(4000);
+    // Wait until the View button is on the page
+    await this.page.locator(this.viewButton).waitFor();
   }
 
   // Clicks View without an employee name and checks the "Required" message.
@@ -30,9 +29,9 @@ exports.TimePage = class TimePage {
     // View button
     let viewButton = await this.page.locator(this.viewButton);
     await viewButton.click();
-    await this.page.waitForTimeout(2000);
-    // After clicking View, the "Required" message should appear
+    // After clicking View, the "Required" message should appear (wait max 10 seconds)
     let required = await this.page.locator(this.required);
+    await required.waitFor({ timeout: 10000 });
     let requiredVisible = await required.isVisible(); // check that the "Required" message is really visible on the page
     if (!requiredVisible) {
       return false;
@@ -49,17 +48,16 @@ exports.TimePage = class TimePage {
   async validationDW() {
     let viewActionButton = await this.page.locator(this.viewActionButton);
     await viewActionButton.click();
-    await this.page.waitForTimeout(2000);
     // Check that the week starts on Monday and ends on Sunday
 
     let weekDays = await this.page.locator(this.weekDays);
+    await weekDays.first().waitFor({ timeout: 10000 }); // wait until the timesheet table is loaded
     let count = await weekDays.count(); 
     let weekDaysbox = [];
     for (let i = 0; i < count; i++) {
       let text = await weekDays.nth(i).innerText(); 
       weekDaysbox.push(text); 
     }
-    //console.log(weekDaysbox[0]);
 return {
     monday: weekDaysbox[0],  
     sunday: weekDaysbox[6]   

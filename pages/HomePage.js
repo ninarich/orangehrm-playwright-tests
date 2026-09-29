@@ -16,17 +16,16 @@ exports.HomePage = class HomePage {
   // Used in: tests/dashboard.spec.js -> "Home page"
   // Run: npx playwright test tests/dashboard.spec.js -g "Home page" --headed
   async gotoHomePage() {
-    await this.page.waitForTimeout(4000);
     await this.page.goto(
       "https://opensource-demo.orangehrmlive.com/web/index.php/dashboard/index",
     );
-    await this.page.waitForTimeout(4000);
   }
   // Returns the number of posts in the "Buzz Latest Posts" widget.
   // Used in: tests/dashboard.spec.js -> "Buzz Latest Post"
   // Run: npx playwright test tests/dashboard.spec.js -g "Buzz Latest Post" --headed
   async countBuzzLatest() {
     let counter = await this.page.locator(this.latestPost);
+    await counter.first().waitFor({ timeout: 10000 }); // wait until at least one post is loaded
     let counterLatest = counter.count();
     return counterLatest;
   }
@@ -35,6 +34,7 @@ exports.HomePage = class HomePage {
   // Run: npx playwright test tests/dashboard.spec.js -g "Buzz Latest Post" --headed
   async countMyActions() {
     let countAct = await this.page.locator(this.myActions);
+    await countAct.first().waitFor({ timeout: 10000 }); // wait until at least one item is loaded
     let countAllActs = countAct.count();
     return countAllActs;
   }
@@ -46,13 +46,14 @@ exports.HomePage = class HomePage {
   async actionSearch() {
     let searchField = await this.page.locator(this.mySearch);
     let alphabet = 'abcdefghijklmnopqrstuvwxyz';
-    //let searchFieldCount = await alphabet.count();
     for (let i = 0; i < alphabet.length; i++){
        let char = await alphabet[i]; // take the letter by its index
        console.log(char);
        await searchField.fill(char); // type the letter into the search field
         let menuList = await this.page.locator(this.myMenu); // locator for the menu items
         
+        // Short pause is kept on purpose: the menu is filtered on the page right away,
+        // and there is no single element we can wait for.
         await this.page.waitForTimeout(500);
  
         let menuListLength = await menuList.count(); // number of menu items
