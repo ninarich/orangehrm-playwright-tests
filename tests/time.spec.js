@@ -2,18 +2,24 @@
 // The username and password are not written in the code.
 // They come from environment variables: the .env file on your computer
 // and GitHub Secrets in GitHub Actions (see .env.example and README.md).
-// Every test logs in by itself, so each test is independent.
+// The login is in test.beforeEach below, so each test is independent.
 
 const { test, expect } = require("@playwright/test");
 import { LoginPage } from "../pages/LoginPage.js";
 import { TimePage } from "../pages/TimePage.js";
 
-// Click View without Employee Name: the "Required" message should appear
-test("Time Page validation", async ({ page }) => {
+// Runs before every test in this file: opens the Login page and logs in as Admin.
+// The login is written only once here, but it still runs before each test,
+// so every test starts in a new browser and stays independent.
+test.beforeEach(async ({ page }) => {
   const login = new LoginPage(page);
   await login.gotoLoginPage();
   await login.login(process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
   await page.waitForTimeout(4000);
+});
+
+// Click View without Employee Name: the "Required" message should appear
+test("Time Page validation", async ({ page }) => {
   const tp = new TimePage(page); // tp = Time Page
   await tp.gotoTimePage();
 
@@ -24,10 +30,6 @@ test("Time Page validation", async ({ page }) => {
 
 // The timesheet week starts on Monday and ends on Sunday
 test("Week Days validation", async ({ page }) => {
-  const login = new LoginPage(page);
-  await login.gotoLoginPage();
-  await login.login(process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD);
-  await page.waitForTimeout(4000);
   const tp = new TimePage(page); // tp = Time Page
   await tp.gotoTimePage();
 
